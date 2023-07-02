@@ -1,38 +1,39 @@
-import { useState, useRef } from 'react';
+import { useEffect, useRef } from 'react';
 
 const PhoneInput = () => {
-  const [formattedInput, setFormattedInput] = useState('');
   const inputRef = useRef(null);
 
-  const handleChange = (e) => {
-    const input = e.target.value.replace(/\D/g, '').substring(0, 10);
-    const areaCode = input.substring(0, 3);
-    const middlePart = input.substring(3, 6);
-    const lastPart = input.substring(6, 10);
+  useEffect(() => {
+    const handleInput = () => {
+      const input = inputRef.current.value.replace(/\D/g, '').substring(0, 10);
+      const firstPart = input.substring(0, 3);
+      const middlePart = input.substring(3, 6);
+      const lastPart = input.substring(6, 10);
+      const oldSelectionStart = inputRef.current.selectionStart;
+      const oldLength = inputRef.current.value.length;
 
-    let caretStart = e.target.selectionStart;
-    const caretOffset = e.target.value.length - formattedInput.length;
+      if (input.length > 6) {
+        inputRef.current.value = `(${firstPart}) ${middlePart}-${lastPart}`;
+      } else if (input.length > 3) {
+        inputRef.current.value = `(${firstPart}) ${middlePart}`;
+      } else if (input.length > 0) {
+        inputRef.current.value = `(${firstPart}`;
+      } else {
+        inputRef.current.value = '';
+      }
 
-    if (input.length > 6) {
-      setFormattedInput(`(${areaCode}) ${middlePart}-${lastPart}`);
-    } else if (input.length > 3) {
-      setFormattedInput(`(${areaCode}) ${middlePart}`);
-    } else if (input.length > 0) {
-      setFormattedInput(`(${areaCode}`);
-    } else {
-      setFormattedInput('');
-    }
+      const newLength = inputRef.current.value.length;
+      const caretOffset = oldLength - oldSelectionStart;
+      const newSelectionStart = newLength - caretOffset;
+      inputRef.current.setSelectionRange(newSelectionStart, newSelectionStart);
+    };
 
-    if (caretOffset < 0) {
-      caretStart -= Math.abs(caretOffset);
-    } else {
-      caretStart += caretOffset;
-    }
+    inputRef.current.addEventListener('input', handleInput);
 
-    inputRef.current.setSelectionRange(caretStart, caretStart);
-
-    console.log('object');
-  };
+    return () => {
+      inputRef.current.removeEventListener('input', handleInput);
+    };
+  }, [inputRef]);
 
   return (
     <div className='container text-center'>
@@ -42,9 +43,7 @@ const PhoneInput = () => {
         maxLength='16'
         placeholder='mobile number'
         autoComplete='off'
-        value={formattedInput}
         ref={inputRef}
-        onChange={(e) => handleChange(e)}
       />
       <div>
         <label htmlFor='phone'>(123) 456-7890</label>
